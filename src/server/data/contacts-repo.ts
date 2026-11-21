@@ -7,6 +7,7 @@ import {
   isStage,
   type Contact,
   type NewContactInput,
+  type Stage,
 } from "@/server/domain/contacts";
 import type { ContactsRepository } from "@/server/services/contacts";
 
@@ -60,5 +61,21 @@ export class LibsqlContactsRepository implements ContactsRepository {
       ],
     });
     return contact;
+  }
+
+  async getById(id: string): Promise<Contact | null> {
+    const result = await this.db.execute({
+      sql: "SELECT id, name, email, company, stage, created_at, updated_at FROM contacts WHERE id = ?",
+      args: [id],
+    });
+    const row = result.rows[0];
+    return row ? rowToContact(row) : null;
+  }
+
+  async setStage(id: string, stage: Stage): Promise<void> {
+    await this.db.execute({
+      sql: "UPDATE contacts SET stage = ?, updated_at = ? WHERE id = ?",
+      args: [stage, new Date().toISOString(), id],
+    });
   }
 }

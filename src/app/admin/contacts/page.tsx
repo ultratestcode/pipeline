@@ -3,7 +3,7 @@
 // Composants : design system « Comptoir » via shadcn (INTENT.md, Contraintes).
 
 import { getContactsService } from "@/server/data/contacts-service";
-import type { Stage } from "@/server/domain/contacts";
+import { NEXT_STAGES, type Stage } from "@/server/domain/contacts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -63,7 +63,8 @@ async function readSearchParams(
   const params = await searchParams;
   const error = typeof params.error === "string" ? params.error : null;
   const added = params.added !== undefined;
-  return { error, added };
+  const advanced = params.advanced !== undefined;
+  return { error, added, advanced };
 }
 
 export default async function AdminContactsPage({
@@ -71,7 +72,7 @@ export default async function AdminContactsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { error, added } = await readSearchParams(searchParams);
+  const { error, added, advanced } = await readSearchParams(searchParams);
   const contacts = await (await getContactsService()).listContacts();
 
   return (
@@ -89,6 +90,11 @@ export default async function AdminContactsPage({
       {added ? (
         <p className="mb-4 rounded border border-accent-foreground/25 bg-accent p-3 text-accent-foreground">
           Contact ajouté.
+        </p>
+      ) : null}
+      {advanced ? (
+        <p className="mb-4 rounded border border-accent-foreground/25 bg-accent p-3 text-accent-foreground">
+          Étape mise à jour.
         </p>
       ) : null}
 
@@ -117,6 +123,7 @@ export default async function AdminContactsPage({
                   <TableHead>Email</TableHead>
                   <TableHead>Société</TableHead>
                   <TableHead className="text-right">Étape</TableHead>
+                  <TableHead className="text-right">Progresser</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -136,6 +143,37 @@ export default async function AdminContactsPage({
                         <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                         {STAGE_LABELS[contact.stage]}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="py-3 text-right">
+                      {NEXT_STAGES[contact.stage].length === 0 ? (
+                        <span className="text-xs text-muted-foreground">
+                          Terminal
+                        </span>
+                      ) : (
+                        <div className="flex justify-end gap-2">
+                          {NEXT_STAGES[contact.stage].map((next) => (
+                            <form
+                              key={next}
+                              action="/api/contacts/advance"
+                              method="post"
+                            >
+                              <input type="hidden" name="id" value={contact.id} />
+                              <input
+                                type="hidden"
+                                name="target"
+                                value={next}
+                              />
+                              <Button
+                                type="submit"
+                                variant="outline"
+                                size="sm"
+                              >
+                                → {STAGE_LABELS[next]}
+                              </Button>
+                            </form>
+                          ))}
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
