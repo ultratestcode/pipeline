@@ -3,6 +3,7 @@
 // Composants : design system « Comptoir » via shadcn (INTENT.md, Contraintes).
 
 import Link from "next/link";
+import { connection } from "next/server";
 import { getContactsService } from "@/server/data/contacts-service";
 import {
   isDueForFollowUp,
@@ -209,6 +210,10 @@ export default async function AdminContactsPage({
 
   // Groupe « À relancer » en tête (dates dues ou en retard, la plus proche
   // d'abord), le reste ensuite dans l'ordre de création.
+  // L'horloge est une valeur instable sous Cache Components (garde
+  // « blocking-prerender-current-time ») : connection() déclare qu'on est au
+  // moment de la requête, « aujourd'hui » est donc le jour de chaque requête.
+  await connection();
   const today = new Date().toISOString().slice(0, 10);
   const due = contacts
     .filter((c) => isDueForFollowUp(c.followUpAt, c.stage, today))
