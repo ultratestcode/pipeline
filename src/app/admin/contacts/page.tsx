@@ -141,7 +141,8 @@ function ContactsTable({
                 {showFollowUp ? (
                   <TableCell className="py-3 text-sm tabular-nums">
                     {contact.followUpAt ?? "—"}
-                    {contact.followUpAt && contact.followUpAt < today ? (
+                    {isDueForFollowUp(contact.followUpAt, contact.stage, today) &&
+                    contact.followUpAt < today ? (
                       <span className="ml-1.5 text-destructive">
                         en retard
                       </span>
