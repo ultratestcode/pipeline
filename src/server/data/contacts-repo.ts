@@ -100,4 +100,11 @@ export class LibsqlContactsRepository implements ContactsRepository {
       ],
     });
   }
+
+  async delete(id: string): Promise<void> {
+    await this.db.execute({
+      sql: "DELETE FROM contacts WHERE id = ?",
+      args: [id],
+    });
+  }
 }

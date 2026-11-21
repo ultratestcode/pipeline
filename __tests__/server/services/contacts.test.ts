@@ -53,6 +53,12 @@ class FakeRepo implements ContactsRepository {
     this.updateWrites.push({ id, ...fields });
   }
 
+  deleted: string[] = [];
+
+  async delete(id: string): Promise<void> {
+    this.deleted.push(id);
+  }
+
   // Fabrique un contact existant à une étape donnée pour les tests.
   seed(id: string, stage: Stage): void {
     const now = new Date().toISOString();
@@ -182,8 +188,7 @@ describe("ContactsService.updateContact", () => {
     expect(repo.updateWrites).toEqual([]);
   });
 
-  it("enregistrement sans modification : écriture identique, aucun doublon", async () => {
-    const repo = new FakeRepo();
+  it("enregistrement sans modification : écriture identique, aucun doublon", async () => {    const repo = new FakeRepo();
     repo.seed("c1", "new");
     await new ContactsService(repo).updateContact("c1", {
       name: "Semé",
@@ -199,5 +204,22 @@ describe("ContactsService.updateContact", () => {
       email: null,
       company: null,
     });
+  });
+});
+
+describe("ContactsService.deleteContact", () => {
+  it("supprime un contact existant", async () => {
+    const repo = new FakeRepo();
+    repo.seed("c1", "contacted");
+    await new ContactsService(repo).deleteContact("c1");
+    expect(repo.deleted).toEqual(["c1"]);
+  });
+
+  it("refuse un contact inconnu et n'écrit rien", async () => {
+    const repo = new FakeRepo();
+    await expect(
+      new ContactsService(repo).deleteContact("absent"),
+    ).rejects.toThrow(/Contact introuvable/);
+    expect(repo.deleted).toEqual([]);
   });
 });

@@ -23,6 +23,7 @@ export interface ContactsRepository {
   getById(id: string): Promise<Contact | null>;
   setStage(id: string, stage: Stage): Promise<void>;
   update(id: string, fields: ContactFields): Promise<void>;
+  delete(id: string): Promise<void>;
 }
 
 export class ContactsService {
@@ -85,5 +86,15 @@ export class ContactsService {
     };
     await this.repo.update(id, fields);
     return { ...contact, ...fields };
+  }
+
+  // Lot 5 : retirer un contact. La confirmation est faite à l'écran, en
+  // deux temps ; ici on vérifie seulement que la cible existe.
+  async deleteContact(id: string): Promise<void> {
+    const contact = await this.repo.getById(id);
+    if (!contact) {
+      throw new Error("Contact introuvable.");
+    }
+    await this.repo.delete(id);
   }
 }

@@ -63,10 +63,12 @@ reste hors de ce lot : signalé, non codé.)
 - Étant donné la fiche d'un contact, quand je n'ai rien modifié, alors
   l'enregistrement est sans effet visible (pas de doublon, pas d'erreur).
 
-## Lot 5 · Retirer un contact de la liste
+## Lot 5 · Retirer un contact de la liste — livré
 
 Je supprime un contact qui ne m'intéresse plus, après confirmation ; il
-disparaît de la liste et de la base.
+disparaît de la liste et de la base. Confirmation en deux temps côté
+serveur (demande → écran « Supprimer X ? »), aucune suppression sans la
+seconde validation.
 
 - Étant donné un contact, quand je confirme sa suppression, alors il
   disparaît de la liste et la ligne est supprimée en base.

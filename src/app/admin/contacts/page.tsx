@@ -59,25 +59,33 @@ function Field({
   );
 }
 
-// Une ligne d'action « Progresser » : une transitions légale = un bouton ;
-// aucune sur les étapes terminales.
+// Une ligne d'action « Progresser » : une transition légale = un bouton ;
+// aucune sur les étapes terminales. Plus la demande de suppression, qui
+// ouvre la confirmation (elle ne supprime pas d'un coup).
 function AdvanceCell({ contact }: { contact: Contact }) {
-  if (NEXT_STAGES[contact.stage].length === 0) {
-    return (
-      <span className="text-xs text-muted-foreground">Terminal</span>
-    );
-  }
   return (
-    <div className="flex justify-end gap-2">
-      {NEXT_STAGES[contact.stage].map((next) => (
-        <form key={next} action="/api/contacts/advance" method="post">
-          <input type="hidden" name="id" value={contact.id} />
-          <input type="hidden" name="target" value={next} />
-          <Button type="submit" variant="outline" size="sm">
-            → {STAGE_LABELS[next]}
-          </Button>
-        </form>
-      ))}
+    <div className="flex flex-col items-end gap-1">
+      <div className="flex justify-end gap-2">
+        {NEXT_STAGES[contact.stage].map((next) => (
+          <form key={next} action="/api/contacts/advance" method="post">
+            <input type="hidden" name="id" value={contact.id} />
+            <input type="hidden" name="target" value={next} />
+            <Button type="submit" variant="outline" size="sm">
+              → {STAGE_LABELS[next]}
+            </Button>
+          </form>
+        ))}
+        {NEXT_STAGES[contact.stage].length === 0 ? (
+          <span className="text-xs text-muted-foreground">Terminal</span>
+        ) : null}
+      </div>
+      <form action="/api/contacts/delete" method="post">
+        <input type="hidden" name="id" value={contact.id} />
+        <input type="hidden" name="ask" value="1" />
+        <Button type="submit" variant="ghost" size="sm">
+          Supprimer
+        </Button>
+      </form>
     </div>
   );
 }
@@ -165,7 +173,9 @@ async function readSearchParams(
   const added = params.added !== undefined;
   const advanced = params.advanced !== undefined;
   const updated = params.updated !== undefined;
-  return { error, added, advanced, updated };
+  const deleted = params.deleted !== undefined;
+  const confirmId = typeof params.confirm === "string" ? params.confirm : null;
+  return { error, added, advanced, updated, deleted, confirmId };
 }
 
 export default async function AdminContactsPage({
@@ -173,9 +183,8 @@ export default async function AdminContactsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { error, added, advanced, updated } = await readSearchParams(
-    searchParams,
-  );
+  const { error, added, advanced, updated, deleted, confirmId } =
+    await readSearchParams(searchParams);
   const contacts = await (await getContactsService()).listContacts();
 
   // Groupe « À relancer » en tête (dates dues ou en retard, la plus proche
@@ -187,6 +196,11 @@ export default async function AdminContactsPage({
   const rest = contacts.filter(
     (c) => !isDueForFollowUp(c.followUpAt, c.stage, today),
   );
+
+  // Demande de suppression en attente de confirmation (?confirm=<id>).
+  const confirmToDelete = confirmId
+    ? (contacts.find((c) => c.id === confirmId) ?? null)
+    : null;
 
   return (
     <main className="mx-auto max-w-2xl p-8">
@@ -214,6 +228,38 @@ export default async function AdminContactsPage({
         <p className="mb-4 rounded border border-accent-foreground/25 bg-accent p-3 text-accent-foreground">
           Contact corrigé.
         </p>
+      ) : null}
+      {deleted ? (
+        <p className="mb-4 rounded border border-accent-foreground/25 bg-accent p-3 text-accent-foreground">
+          Contact supprimé.
+        </p>
+      ) : null}
+      {confirmToDelete ? (
+        <Card className="mb-4">
+          <CardHeader>
+            <CardTitle>Supprimer {confirmToDelete.name} ?</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-4 text-sm text-muted-foreground">
+              La suppression est définitive : la ligne disparaît de la liste
+              et de la base.
+            </p>
+            <div className="flex gap-3">
+              <form action="/api/contacts/delete" method="post">
+                <input type="hidden" name="id" value={confirmToDelete.id} />
+                <input type="hidden" name="confirmed" value="1" />
+                <Button type="submit" variant="destructive">
+                  Supprimer définitivement
+                </Button>
+              </form>
+              <Link href="/admin/contacts">
+                <Button type="button" variant="outline">
+                  Annuler
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
       ) : null}
 
       <form action="/api/contacts" method="post" className="mb-8 grid gap-4">
