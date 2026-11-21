@@ -27,4 +27,10 @@ export async function initSchema(db: Client): Promise<void> {
       updated_at TEXT NOT NULL
     )
   `);
+  // Ajout de colonne idempotent (Lot 3) : CREATE TABLE IF NOT EXISTS ne
+  // modifie pas une table existante.
+  const cols = await db.execute("PRAGMA table_info(contacts)");
+  if (!cols.rows.some((row) => String(row.name) === "follow_up_at")) {
+    await db.execute("ALTER TABLE contacts ADD COLUMN follow_up_at TEXT");
+  }
 }

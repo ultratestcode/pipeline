@@ -9,7 +9,11 @@ import {
   type NewContactInput,
   type Stage,
 } from "@/server/domain/contacts";
-import type { ContactsRepository } from "@/server/services/contacts";
+import type {
+  ContactFields,
+  ContactFilter,
+  ContactsRepository,
+} from "@/server/services/contacts";
 
 function rowToContact(row: Row): Contact {
   const rawStage = row.stage;
@@ -22,17 +26,21 @@ function rowToContact(row: Row): Contact {
     email: row.email == null ? null : String(row.email),
     company: row.company == null ? null : String(row.company),
     stage: rawStage,
+    followUpAt: row.follow_up_at == null ? null : String(row.follow_up_at),
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
   };
 }
+
+const SELECT_CONTACT =
+  "SELECT id, name, email, company, stage, follow_up_at, created_at, updated_at FROM contacts";
 
 export class LibsqlContactsRepository implements ContactsRepository {
   constructor(private readonly db: Client) {}
 
   async list(): Promise<Contact[]> {
     const result = await this.db.execute(
-      "SELECT id, name, email, company, stage, created_at, updated_at FROM contacts ORDER BY created_at",
+      `${SELECT_CONTACT} ORDER BY created_at`,
     );
     return result.rows.map(rowToContact);
   }
@@ -45,17 +53,19 @@ export class LibsqlContactsRepository implements ContactsRepository {
       email: input.email ?? null,
       company: input.company ?? null,
       stage: FIRST_STAGE,
+      followUpAt: input.followUpAt ?? null,
       createdAt: now,
       updatedAt: now,
     };
     await this.db.execute({
-      sql: "INSERT INTO contacts (id, name, email, company, stage, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      sql: "INSERT INTO contacts (id, name, email, company, stage, follow_up_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       args: [
         contact.id,
         contact.name,
         contact.email,
         contact.company,
         contact.stage,
+        contact.followUpAt,
         contact.createdAt,
         contact.updatedAt,
       ],
@@ -65,7 +75,7 @@ export class LibsqlContactsRepository implements ContactsRepository {
 
   async getById(id: string): Promise<Contact | null> {
     const result = await this.db.execute({
-      sql: "SELECT id, name, email, company, stage, created_at, updated_at FROM contacts WHERE id = ?",
+      sql: `${SELECT_CONTACT} WHERE id = ?`,
       args: [id],
     });
     const row = result.rows[0];
@@ -77,5 +87,44 @@ export class LibsqlContactsRepository implements ContactsRepository {
       sql: "UPDATE contacts SET stage = ?, updated_at = ? WHERE id = ?",
       args: [stage, new Date().toISOString(), id],
     });
+  }
+
+  async update(id: string, fields: ContactFields): Promise<void> {
+    await this.db.execute({
+      sql: "UPDATE contacts SET name = ?, email = ?, company = ?, updated_at = ? WHERE id = ?",
+      args: [
+        fields.name,
+        fields.email,
+        fields.company,
+        new Date().toISOString(),
+        id,
+      ],
+    });
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.db.execute({
+      sql: "DELETE FROM contacts WHERE id = ?",
+      args: [id],
+    });
+  }
+
+  async search(filter: ContactFilter): Promise<Contact[]> {
+    const where: string[] = [];
+    const args: string[] = [];
+    if (filter.stage) {
+      where.push("stage = ?");
+      args.push(filter.stage);
+    }
+    if (filter.q) {
+      // LIKE est insensible à la casse pour l'ASCII ; les métacaractères
+      // saisis (% et _) sont échappés pour rester littéraux.
+      where.push("(name LIKE ? ESCAPE '\\' OR company LIKE ? ESCAPE '\\')");
+      const like = `%${filter.q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+      args.push(like, like);
+    }
+    const sql = `${SELECT_CONTACT}${where.length ? ` WHERE ${where.join(" AND ")}` : ""} ORDER BY created_at`;
+    const result = await this.db.execute({ sql, args });
+    return result.rows.map(rowToContact);
   }
 }

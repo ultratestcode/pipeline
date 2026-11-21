@@ -35,10 +35,12 @@ le badge change, la base est à jour, et une étape gagnée/perdu ne bouge plus.
 - Étant donné une transition hors séquence (nouveau → gagné), quand elle
   arrive au service, alors elle est rejetée par une règle métier testée.
 
-## Lot 3 · Savoir qui relancer aujourd'hui
+## Lot 3 · Savoir qui relancer aujourd'hui — livré
 
 J'attache une date de relance à un contact ; la liste me montre en tête ce
 qui est dû aujourd'hui (retards compris), le reste après.
+Interprétation retenue : « non traitée » = étape en cours — gagné/perdu ne
+remonte plus dans « À relancer ».
 
 - Étant donné un contact avec relance à aujourd'hui, quand j'ouvre la liste,
   alors il figure dans le groupe « À relancer ».
@@ -48,10 +50,11 @@ qui est dû aujourd'hui (retards compris), le reste après.
   est hors du groupe « À relancer ».
 - Étant donné une date saisie, quand je recharge, alors elle est persistée.
 
-## Lot 4 · Corriger un contact
+## Lot 4 · Corriger un contact — livré
 
 Je corrige nom, email ou société depuis la liste ; les mêmes règles de
-validation qu'à la création s'appliquent.
+validation qu'à la création s'appliquent. (Éditer la date de relance
+reste hors de ce lot : signalé, non codé.)
 
 - Étant donné un contact, quand j'enregistre une correction valide, alors la
   liste affiche la nouvelle valeur et la base est à jour.
@@ -60,10 +63,12 @@ validation qu'à la création s'appliquent.
 - Étant donné la fiche d'un contact, quand je n'ai rien modifié, alors
   l'enregistrement est sans effet visible (pas de doublon, pas d'erreur).
 
-## Lot 5 · Retirer un contact de la liste
+## Lot 5 · Retirer un contact de la liste — livré
 
 Je supprime un contact qui ne m'intéresse plus, après confirmation ; il
-disparaît de la liste et de la base.
+disparaît de la liste et de la base. Confirmation en deux temps côté
+serveur (demande → écran « Supprimer X ? »), aucune suppression sans la
+seconde validation.
 
 - Étant donné un contact, quand je confirme sa suppression, alors il
   disparaît de la liste et la ligne est supprimée en base.
@@ -72,10 +77,11 @@ disparaît de la liste et de la base.
 - Étant donné un contact supprimé, quand je redémarre l'app, alors il ne
   revient pas.
 
-## Lot 6 · Retrouver un contact d'un coup d'œil
+## Lot 6 · Retrouver un contact d'un coup d'œil — livré
 
 Je filtre la liste par étape et je cherche par nom ou société ; le filtre se
-partage par l'URL.
+partage par l'URL (`?stage=`, `?q=`). Like SQLite est insensible à la casse
+pour l'ASCII ; les accents restent distincts (non corrigé, hors critères).
 
 - Étant donné plusieurs contacts, quand je filtre sur « contacté », alors
   seuls ceux-ci s'affichent.
