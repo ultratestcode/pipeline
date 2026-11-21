@@ -77,10 +77,11 @@ seconde validation.
 - Étant donné un contact supprimé, quand je redémarre l'app, alors il ne
   revient pas.
 
-## Lot 6 · Retrouver un contact d'un coup d'œil
+## Lot 6 · Retrouver un contact d'un coup d'œil — livré
 
 Je filtre la liste par étape et je cherche par nom ou société ; le filtre se
-partage par l'URL.
+partage par l'URL (`?stage=`, `?q=`). Like SQLite est insensible à la casse
+pour l'ASCII ; les accents restent distincts (non corrigé, hors critères).
 
 - Étant donné plusieurs contacts, quand je filtre sur « contacté », alors
   seuls ceux-ci s'affichent.

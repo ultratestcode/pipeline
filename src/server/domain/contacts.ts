@@ -57,6 +57,19 @@ export function normalizeNewContactInput(
   return { ok: true, value: { name, email, company, followUpAt } };
 }
 
+// Lot 6 : normalisation des paramètres d'URL du filtre de liste. Une étape
+// inconnue ignore le filtre (un lien périmé affiche la liste, pas une
+// erreur) ; le texte est juste nettoyé.
+export function normalizeContactFilter(input: {
+  stage?: string | null;
+  q?: string | null;
+}): { stage: Stage | null; q: string } {
+  return {
+    stage: isStage(input.stage) ? input.stage : null,
+    q: input.q?.trim() ?? "",
+  };
+}
+
 // Lot 3 : « À relancer » = date posée, due aujourd'hui ou en retard, et
 // affaire encore en cours — une étape terminale n'est plus à relancer.
 // Les dates ISO courtes se comparent lexicographiquement.

@@ -17,6 +17,12 @@ export interface ContactFields {
   company: string | null;
 }
 
+// Filtre de liste (Lot 6) : étape exacte et/ou texte dans nom/société.
+export interface ContactFilter {
+  stage: Stage | null;
+  q: string;
+}
+
 export interface ContactsRepository {
   list(): Promise<Contact[]>;
   add(input: NewContactInput): Promise<Contact>;
@@ -24,6 +30,7 @@ export interface ContactsRepository {
   setStage(id: string, stage: Stage): Promise<void>;
   update(id: string, fields: ContactFields): Promise<void>;
   delete(id: string): Promise<void>;
+  search(filter: ContactFilter): Promise<Contact[]>;
 }
 
 export class ContactsService {
@@ -96,5 +103,11 @@ export class ContactsService {
       throw new Error("Contact introuvable.");
     }
     await this.repo.delete(id);
+  }
+
+  // Lot 6 : recherche par étape et texte. Le filtre est déjà normalisé
+  // par la couche domaine ; le dépôt ne voit que des valeurs sûres.
+  searchContacts(filter: ContactFilter): Promise<Contact[]> {
+    return this.repo.search(filter);
   }
 }

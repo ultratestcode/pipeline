@@ -7,6 +7,8 @@ import { getContactsService } from "@/server/data/contacts-service";
 import {
   isDueForFollowUp,
   NEXT_STAGES,
+  normalizeContactFilter,
+  STAGES,
   type Contact,
   type Stage,
 } from "@/server/domain/contacts";
@@ -15,6 +17,8 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -175,7 +179,18 @@ async function readSearchParams(
   const updated = params.updated !== undefined;
   const deleted = params.deleted !== undefined;
   const confirmId = typeof params.confirm === "string" ? params.confirm : null;
-  return { error, added, advanced, updated, deleted, confirmId };
+  const stage = typeof params.stage === "string" ? params.stage : null;
+  const q = typeof params.q === "string" ? params.q : null;
+  return { error, added, advanced, updated, deleted, confirmId, stage, q };
+}
+
+// Lien de filtre : conserve la recherche, remplace l'étape.
+function filterHref(stage: Stage | null, q: string): string {
+  const params = new URLSearchParams();
+  if (stage) params.set("stage", stage);
+  if (q) params.set("q", q);
+  const qs = params.toString();
+  return `/admin/contacts${qs ? `?${qs}` : ""}`;
 }
 
 export default async function AdminContactsPage({
@@ -183,9 +198,14 @@ export default async function AdminContactsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { error, added, advanced, updated, deleted, confirmId } =
+  const { error, added, advanced, updated, deleted, confirmId, stage, q } =
     await readSearchParams(searchParams);
-  const contacts = await (await getContactsService()).listContacts();
+  // Lot 6 : la liste est exactement ce que disent les paramètres d'URL —
+  // rien n'est retenu d'une requête à l'autre, recharger rejoue le filtre.
+  const filter = normalizeContactFilter({ stage, q });
+  const contacts = await (
+    await getContactsService()
+  ).searchContacts(filter);
 
   // Groupe « À relancer » en tête (dates dues ou en retard, la plus proche
   // d'abord), le reste ensuite dans l'ordre de création.
@@ -277,8 +297,58 @@ export default async function AdminContactsPage({
         </Button>
       </form>
 
+      <div className="mb-6 flex flex-wrap items-center gap-2">
+        <Button
+          asChild
+          variant={filter.stage === null ? "default" : "outline"}
+          size="sm"
+        >
+          <Link href={filterHref(null, filter.q)}>Tous</Link>
+        </Button>
+        {STAGES.map((s) => (
+          <Button
+            key={s}
+            asChild
+            variant={filter.stage === s ? "default" : "outline"}
+            size="sm"
+          >
+            <Link href={filterHref(s, filter.q)}>{STAGE_LABELS[s]}</Link>
+          </Button>
+        ))}
+        <form
+          action="/admin/contacts"
+          method="get"
+          className="ml-auto flex items-center gap-2"
+        >
+          {filter.stage ? (
+            <input type="hidden" name="stage" value={filter.stage} />
+          ) : null}
+          <Input
+            id="contact-search"
+            name="q"
+            defaultValue={filter.q}
+            placeholder="Nom ou société"
+            className="h-8 w-44"
+          />
+          <Button type="submit" variant="outline" size="sm">
+            Chercher
+          </Button>
+        </form>
+      </div>
+
       {contacts.length === 0 ? (
-        <p className="text-muted-foreground">Aucun contact pour le moment.</p>
+        <p className="text-muted-foreground">
+          {filter.stage || filter.q ? (
+            <>
+              Aucun contact ne correspond au filtre.{" "}
+              <Link href="/admin/contacts" className="underline">
+                Voir tous les contacts
+              </Link>
+            </>
+          ) : (
+            "Aucun contact pour le moment."
+          )}
+        </p>
       ) : (
         <>
           <h2 className="mb-3 text-lg font-semibold">

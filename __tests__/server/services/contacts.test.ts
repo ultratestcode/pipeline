@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { Contact, NewContactInput, Stage } from "@/server/domain/contacts";
 import {
   ContactsService,
+  type ContactFilter,
   type ContactsRepository,
 } from "@/server/services/contacts";
 
@@ -57,6 +58,19 @@ class FakeRepo implements ContactsRepository {
 
   async delete(id: string): Promise<void> {
     this.deleted.push(id);
+  }
+
+  lastSearchFilter: ContactFilter | null = null;
+
+  async search(filter: ContactFilter): Promise<Contact[]> {
+    this.lastSearchFilter = filter;
+    return [...this.contacts.values()].filter(
+      (c) =>
+        (filter.stage === null || c.stage === filter.stage) &&
+        (filter.q === "" ||
+          c.name.toLowerCase().includes(filter.q.toLowerCase()) ||
+          (c.company ?? "").toLowerCase().includes(filter.q.toLowerCase())),
+    );
   }
 
   // Fabrique un contact existant à une étape donnée pour les tests.
@@ -221,5 +235,24 @@ describe("ContactsService.deleteContact", () => {
       new ContactsService(repo).deleteContact("absent"),
     ).rejects.toThrow(/Contact introuvable/);
     expect(repo.deleted).toEqual([]);
+  });
+});
+
+describe("ContactsService.searchContacts", () => {
+  it("transmet le filtre normalisé au dépôt", async () => {
+    const repo = new FakeRepo();
+    await new ContactsService(repo).searchContacts({ stage: "won", q: "cam" });
+    expect(repo.lastSearchFilter).toEqual({ stage: "won", q: "cam" });
+  });
+
+  it("sans filtre, renvoie la liste complète", async () => {
+    const repo = new FakeRepo();
+    repo.seed("c1", "new");
+    repo.seed("c2", "contacted");
+    const found = await new ContactsService(repo).searchContacts({
+      stage: null,
+      q: "",
+    });
+    expect(found).toHaveLength(2);
   });
 });

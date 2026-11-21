@@ -11,6 +11,7 @@ import {
 } from "@/server/domain/contacts";
 import type {
   ContactFields,
+  ContactFilter,
   ContactsRepository,
 } from "@/server/services/contacts";
 
@@ -106,5 +107,24 @@ export class LibsqlContactsRepository implements ContactsRepository {
       sql: "DELETE FROM contacts WHERE id = ?",
       args: [id],
     });
+  }
+
+  async search(filter: ContactFilter): Promise<Contact[]> {
+    const where: string[] = [];
+    const args: string[] = [];
+    if (filter.stage) {
+      where.push("stage = ?");
+      args.push(filter.stage);
+    }
+    if (filter.q) {
+      // LIKE est insensible à la casse pour l'ASCII ; les métacaractères
+      // saisis (% et _) sont échappés pour rester littéraux.
+      where.push("(name LIKE ? ESCAPE '\\' OR company LIKE ? ESCAPE '\\')");
+      const like = `%${filter.q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+      args.push(like, like);
+    }
+    const sql = `${SELECT_CONTACT}${where.length ? ` WHERE ${where.join(" AND ")}` : ""} ORDER BY created_at`;
+    const result = await this.db.execute({ sql, args });
+    return result.rows.map(rowToContact);
   }
 }
