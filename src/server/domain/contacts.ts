@@ -48,3 +48,33 @@ export function normalizeNewContactInput(
 export function isStage(value: unknown): value is Stage {
   return (STAGES as readonly unknown[]).includes(value);
 }
+
+// Séquence stricte (Lot 2) : chaque étape n'autorise que ses successeurs.
+// « gagné » et « perdu » sont terminaux — la liste vide le dit aussi.
+export const NEXT_STAGES: Record<Stage, Stage[]> = {
+  new: ["contacted"],
+  contacted: ["proposal"],
+  proposal: ["won", "lost"],
+  won: [],
+  lost: [],
+};
+
+// Règle métier pure : la transition demandée est-elle dans la séquence ?
+export function validateStageTransition(
+  from: Stage,
+  to: Stage,
+): { ok: true } | { ok: false; error: string } {
+  if (NEXT_STAGES[from].length === 0) {
+    return {
+      ok: false,
+      error: `L'étape « ${from} » est terminale : le contact ne bouge plus.`,
+    };
+  }
+  if (!NEXT_STAGES[from].includes(to)) {
+    return {
+      ok: false,
+      error: `Transition interdite : ${from} → ${to}.`,
+    };
+  }
+  return { ok: true };
+}
