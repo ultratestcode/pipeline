@@ -39,6 +39,20 @@ class FakeRepo implements ContactsRepository {
     this.stageWrites.push({ id, stage });
   }
 
+  updateWrites: Array<{
+    id: string;
+    name: string;
+    email: string | null;
+    company: string | null;
+  }> = [];
+
+  async update(
+    id: string,
+    fields: { name: string; email: string | null; company: string | null },
+  ): Promise<void> {
+    this.updateWrites.push({ id, ...fields });
+  }
+
   // Fabrique un contact existant à une étape donnée pour les tests.
   seed(id: string, stage: Stage): void {
     const now = new Date().toISOString();
@@ -126,5 +140,64 @@ describe("ContactsService.advanceContact", () => {
       new ContactsService(repo).advanceContact("absent", "contacted"),
     ).rejects.toThrow(/Contact introuvable/);
     expect(repo.stageWrites).toEqual([]);
+  });
+});
+
+describe("ContactsService.updateContact", () => {
+  it("écrit les valeurs corrigées", async () => {
+    const repo = new FakeRepo();
+    repo.seed("c1", "new");
+    await new ContactsService(repo).updateContact("c1", {
+      name: "  Camille Ferrand  ",
+      email: "  camille@valois.fr  ",
+      company: "  ",
+    });
+    expect(repo.updateWrites).toEqual([
+      {
+        id: "c1",
+        name: "Camille Ferrand",
+        email: "camille@valois.fr",
+        company: null,
+      },
+    ]);
+  });
+
+  it("refuse un email invalide et n'écrit rien", async () => {
+    const repo = new FakeRepo();
+    repo.seed("c1", "new");
+    await expect(
+      new ContactsService(repo).updateContact("c1", {
+        name: "Camille",
+        email: "pas-un-email",
+      }),
+    ).rejects.toThrow(/Email invalide/);
+    expect(repo.updateWrites).toEqual([]);
+  });
+
+  it("refuse un contact inconnu", async () => {
+    const repo = new FakeRepo();
+    await expect(
+      new ContactsService(repo).updateContact("absent", { name: "X" }),
+    ).rejects.toThrow(/Contact introuvable/);
+    expect(repo.updateWrites).toEqual([]);
+  });
+
+  it("enregistrement sans modification : écriture identique, aucun doublon", async () => {
+    const repo = new FakeRepo();
+    repo.seed("c1", "new");
+    await new ContactsService(repo).updateContact("c1", {
+      name: "Semé",
+      email: null,
+      company: null,
+    });
+    // Une seule écriture, des valeurs identiques aux anciennes : la liste
+    // garde une ligne et l'affichage ne change pas.
+    expect(repo.updateWrites).toHaveLength(1);
+    expect(repo.updateWrites[0]).toMatchObject({
+      id: "c1",
+      name: "Semé",
+      email: null,
+      company: null,
+    });
   });
 });

@@ -9,11 +9,20 @@ import {
   type Stage,
 } from "@/server/domain/contacts";
 
+// Champs éditables d'un contact (Lot 4) : l'étape et la relance ont leur
+// propre chemin, la correction porte sur l'identité.
+export interface ContactFields {
+  name: string;
+  email: string | null;
+  company: string | null;
+}
+
 export interface ContactsRepository {
   list(): Promise<Contact[]>;
   add(input: NewContactInput): Promise<Contact>;
   getById(id: string): Promise<Contact | null>;
   setStage(id: string, stage: Stage): Promise<void>;
+  update(id: string, fields: ContactFields): Promise<void>;
 }
 
 export class ContactsService {
@@ -44,5 +53,37 @@ export class ContactsService {
     }
     await this.repo.setStage(id, target);
     return { ...contact, stage: target };
+  }
+
+  // Lot 4 : lecture d'un contact pour l'écran de correction.
+  async getContact(id: string): Promise<Contact> {
+    const contact = await this.repo.getById(id);
+    if (!contact) {
+      throw new Error("Contact introuvable.");
+    }
+    return contact;
+  }
+
+  // Lot 4 : corriger l'identité d'un contact. Mêmes règles de validation
+  // qu'à la création (normalisation partagée), aucune écriture si refus.
+  async updateContact(
+    id: string,
+    input: NewContactInput,
+  ): Promise<Contact> {
+    const contact = await this.repo.getById(id);
+    if (!contact) {
+      throw new Error("Contact introuvable.");
+    }
+    const normalized = normalizeNewContactInput(input);
+    if (!normalized.ok) {
+      throw new Error(normalized.error);
+    }
+    const fields: ContactFields = {
+      name: normalized.value.name,
+      email: normalized.value.email ?? null,
+      company: normalized.value.company ?? null,
+    };
+    await this.repo.update(id, fields);
+    return { ...contact, ...fields };
   }
 }

@@ -2,6 +2,7 @@
 // Le formulaire poste vers /api/contacts : écriture réelle, puis redirect.
 // Composants : design system « Comptoir » via shadcn (INTENT.md, Contraintes).
 
+import Link from "next/link";
 import { getContactsService } from "@/server/data/contacts-service";
 import {
   isDueForFollowUp,
@@ -109,6 +110,14 @@ function ContactsTable({
               <TableRow key={contact.id}>
                 <TableCell className="py-3 font-medium">
                   {contact.name}
+                  <Link
+                    href={`/admin/contacts/${contact.id}`}
+                    className="ml-2 align-baseline"
+                  >
+                    <Button type="button" variant="ghost" size="sm">
+                      Modifier
+                    </Button>
+                  </Link>
                 </TableCell>
                 <TableCell className="py-3 text-muted-foreground">
                   {contact.email ?? "—"}
@@ -155,7 +164,8 @@ async function readSearchParams(
   const error = typeof params.error === "string" ? params.error : null;
   const added = params.added !== undefined;
   const advanced = params.advanced !== undefined;
-  return { error, added, advanced };
+  const updated = params.updated !== undefined;
+  return { error, added, advanced, updated };
 }
 
 export default async function AdminContactsPage({
@@ -163,7 +173,9 @@ export default async function AdminContactsPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { error, added, advanced } = await readSearchParams(searchParams);
+  const { error, added, advanced, updated } = await readSearchParams(
+    searchParams,
+  );
   const contacts = await (await getContactsService()).listContacts();
 
   // Groupe « À relancer » en tête (dates dues ou en retard, la plus proche
@@ -196,6 +208,11 @@ export default async function AdminContactsPage({
       {advanced ? (
         <p className="mb-4 rounded border border-accent-foreground/25 bg-accent p-3 text-accent-foreground">
           Étape mise à jour.
+        </p>
+      ) : null}
+      {updated ? (
+        <p className="mb-4 rounded border border-accent-foreground/25 bg-accent p-3 text-accent-foreground">
+          Contact corrigé.
         </p>
       ) : null}
 

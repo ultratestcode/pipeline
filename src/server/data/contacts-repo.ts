@@ -9,7 +9,10 @@ import {
   type NewContactInput,
   type Stage,
 } from "@/server/domain/contacts";
-import type { ContactsRepository } from "@/server/services/contacts";
+import type {
+  ContactFields,
+  ContactsRepository,
+} from "@/server/services/contacts";
 
 function rowToContact(row: Row): Contact {
   const rawStage = row.stage;
@@ -82,6 +85,19 @@ export class LibsqlContactsRepository implements ContactsRepository {
     await this.db.execute({
       sql: "UPDATE contacts SET stage = ?, updated_at = ? WHERE id = ?",
       args: [stage, new Date().toISOString(), id],
+    });
+  }
+
+  async update(id: string, fields: ContactFields): Promise<void> {
+    await this.db.execute({
+      sql: "UPDATE contacts SET name = ?, email = ?, company = ?, updated_at = ? WHERE id = ?",
+      args: [
+        fields.name,
+        fields.email,
+        fields.company,
+        new Date().toISOString(),
+        id,
+      ],
     });
   }
 }

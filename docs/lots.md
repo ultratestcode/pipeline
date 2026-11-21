@@ -50,10 +50,11 @@ remonte plus dans « À relancer ».
   est hors du groupe « À relancer ».
 - Étant donné une date saisie, quand je recharge, alors elle est persistée.
 
-## Lot 4 · Corriger un contact
+## Lot 4 · Corriger un contact — livré
 
 Je corrige nom, email ou société depuis la liste ; les mêmes règles de
-validation qu'à la création s'appliquent.
+validation qu'à la création s'appliquent. (Éditer la date de relance
+reste hors de ce lot : signalé, non codé.)
 
 - Étant donné un contact, quand j'enregistre une correction valide, alors la
   liste affiche la nouvelle valeur et la base est à jour.
