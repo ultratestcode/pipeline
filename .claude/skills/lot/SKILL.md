@@ -34,6 +34,14 @@ Argument : le numéro du lot ($ARGUMENTS).
 - Une fois tous les tests verts, ouvre la PR de dev vers main (`gh pr create`) et donne-moi le lien.
 - Dans le corps : les critères cochés, le test de chaque critère, la sortie rouge puis la sortie verte de `pnpm test`.
 
+## 6. Clore l'issue (sur ma demande, après MA fusion)
+- Jamais de moi-même : j'attends que tu dises que la PR est fusionnée.
+- Vérifie d'abord : `gh pr view <N> --json state` — si ce n'est pas MERGED, ne touche rien et dis-le.
+- Issue liée : `gh pr view <N> --json closingIssuesReferences`.
+- La branche par défaut est `dev`, les PRs fusionnent dans `main` : ni `Closes #N` ni les cases liées ne se déclenchent. Ferme à la main, avec la preuve.
+- Dans le corps de l'issue, coche `- [x]` chaque critère ; puis commentaire de preuve (merge commit, sortie verte de `pnpm test`, rappel du rouge vu) ; puis `gh issue close <N>`.
+- Une case ne se coche que si son test est passé : aucune preuve, aucune case.
+
 ## Nomenclature des commits
 - `feat(lot-N): <titre du lot>` : un lot.
 - `fix(lot-N): <ce qui est corrigé>` : une correction.

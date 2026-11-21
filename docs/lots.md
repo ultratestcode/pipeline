@@ -35,10 +35,12 @@ le badge change, la base est à jour, et une étape gagnée/perdu ne bouge plus.
 - Étant donné une transition hors séquence (nouveau → gagné), quand elle
   arrive au service, alors elle est rejetée par une règle métier testée.
 
-## Lot 3 · Savoir qui relancer aujourd'hui
+## Lot 3 · Savoir qui relancer aujourd'hui — livré
 
 J'attache une date de relance à un contact ; la liste me montre en tête ce
 qui est dû aujourd'hui (retards compris), le reste après.
+Interprétation retenue : « non traitée » = étape en cours — gagné/perdu ne
+remonte plus dans « À relancer ».
 
 - Étant donné un contact avec relance à aujourd'hui, quand j'ouvre la liste,
   alors il figure dans le groupe « À relancer ».

@@ -25,6 +25,7 @@ class FakeRepo implements ContactsRepository {
       email: input.email ?? null,
       company: input.company ?? null,
       stage: "new",
+      followUpAt: input.followUpAt ?? null,
       createdAt: now,
       updatedAt: now,
     };
@@ -47,6 +48,7 @@ class FakeRepo implements ContactsRepository {
       email: null,
       company: null,
       stage,
+      followUpAt: null,
       createdAt: now,
       updatedAt: now,
     });
@@ -75,7 +77,20 @@ describe("ContactsService.addContact", () => {
       email: "  ",
       company: undefined,
     });
-    expect(repo.saved).toEqual([{ name: "Durand", email: null, company: null }]);
+    expect(repo.saved).toEqual([
+      { name: "Durand", email: null, company: null, followUpAt: null },
+    ]);
+  });
+
+  it("transmet une date de relance valide au dépôt", async () => {
+    const repo = new FakeRepo();
+    await new ContactsService(repo).addContact({
+      name: "Durand",
+      followUpAt: "2026-11-25",
+    });
+    expect(repo.saved).toEqual([
+      { name: "Durand", email: null, company: null, followUpAt: "2026-11-25" },
+    ]);
   });
 });
 

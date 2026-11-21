@@ -22,17 +22,21 @@ function rowToContact(row: Row): Contact {
     email: row.email == null ? null : String(row.email),
     company: row.company == null ? null : String(row.company),
     stage: rawStage,
+    followUpAt: row.follow_up_at == null ? null : String(row.follow_up_at),
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
   };
 }
+
+const SELECT_CONTACT =
+  "SELECT id, name, email, company, stage, follow_up_at, created_at, updated_at FROM contacts";
 
 export class LibsqlContactsRepository implements ContactsRepository {
   constructor(private readonly db: Client) {}
 
   async list(): Promise<Contact[]> {
     const result = await this.db.execute(
-      "SELECT id, name, email, company, stage, created_at, updated_at FROM contacts ORDER BY created_at",
+      `${SELECT_CONTACT} ORDER BY created_at`,
     );
     return result.rows.map(rowToContact);
   }
@@ -45,17 +49,19 @@ export class LibsqlContactsRepository implements ContactsRepository {
       email: input.email ?? null,
       company: input.company ?? null,
       stage: FIRST_STAGE,
+      followUpAt: input.followUpAt ?? null,
       createdAt: now,
       updatedAt: now,
     };
     await this.db.execute({
-      sql: "INSERT INTO contacts (id, name, email, company, stage, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      sql: "INSERT INTO contacts (id, name, email, company, stage, follow_up_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       args: [
         contact.id,
         contact.name,
         contact.email,
         contact.company,
         contact.stage,
+        contact.followUpAt,
         contact.createdAt,
         contact.updatedAt,
       ],
@@ -65,7 +71,7 @@ export class LibsqlContactsRepository implements ContactsRepository {
 
   async getById(id: string): Promise<Contact | null> {
     const result = await this.db.execute({
-      sql: "SELECT id, name, email, company, stage, created_at, updated_at FROM contacts WHERE id = ?",
+      sql: `${SELECT_CONTACT} WHERE id = ?`,
       args: [id],
     });
     const row = result.rows[0];
