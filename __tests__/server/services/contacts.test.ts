@@ -221,6 +221,22 @@ describe("ContactsService.updateContact", () => {
   });
 });
 
+describe("ContactsService.getContact", () => {
+  it("renvoie le contact demandé (issue #12)", async () => {
+    const repo = new FakeRepo();
+    repo.seed("c1", "contacted");
+    const contact = await new ContactsService(repo).getContact("c1");
+    expect(contact).toMatchObject({ id: "c1", stage: "contacted" });
+  });
+
+  it("refuse un id inconnu (issue #12)", async () => {
+    const repo = new FakeRepo();
+    await expect(
+      new ContactsService(repo).getContact("absent"),
+    ).rejects.toThrow(/Contact introuvable/);
+  });
+});
+
 describe("ContactsService.deleteContact", () => {
   it("supprime un contact existant", async () => {
     const repo = new FakeRepo();
