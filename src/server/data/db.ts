@@ -8,6 +8,32 @@ import { createClient, type Client } from "@libsql/client";
 
 const DEFAULT_DB_PATH = path.join(process.cwd(), "data", "pipeline.db");
 
+// Choix du moteur, seul endroit du projet où il se décide (règle données).
+// Turso dès que TURSO_URL est posé (prod Vercel) ; sinon fichier local
+// (dev et tests) — « passer à une base managée ne modifie que la couche
+// données » (INTENT.md).
+export type DbConfig =
+  | { kind: "file"; path: string }
+  | { kind: "turso"; url: string; authToken?: string };
+
+type DbEnv = { [key: string]: string | undefined };
+
+export function resolveDbConfig(env: DbEnv = process.env): DbConfig {
+  const url = env.TURSO_URL?.trim();
+  if (url) {
+    return { kind: "turso", url, authToken: env.TURSO_AUTH_TOKEN?.trim() };
+  }
+  return { kind: "file", path: env.PIPELINE_DB_PATH ?? DEFAULT_DB_PATH };
+}
+
+export function openDb(env?: Parameters<typeof resolveDbConfig>[0]): Client {
+  const config = resolveDbConfig(env);
+  if (config.kind === "turso") {
+    return createClient({ url: config.url, authToken: config.authToken });
+  }
+  return openLocalDb(config.path);
+}
+
 export function openLocalDb(
   dbPath = process.env.PIPELINE_DB_PATH ?? DEFAULT_DB_PATH,
 ): Client {
