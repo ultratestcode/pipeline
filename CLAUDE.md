@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Mini CRM de prospection mono-utilisateur. **`INTENT.md` à la racine fait autorité** sur le produit, l'architecture et le hors-périmètre (pas d'auth, pas de multi-util) : le lire avant toute évolution et ne pas le contredire.
 
+Les décisions d'architecture sont dans `docs/decisions/` (ADR, format MADR) : lire l'ADR concerné avant de changer une brique, et ne pas reproposer une option qu'un ADR « accepted » a écartée.
+
 ## Commandes
 
 ```bash
