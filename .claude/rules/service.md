@@ -1,3 +1,9 @@
+---
+paths:
+  - "src/server/domain/**"
+  - "src/server/services/**"
+---
+
 # Couche service
 
 `src/server/domain/` porte les règles métier pures (validation, normalisation)

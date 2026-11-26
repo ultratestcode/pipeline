@@ -1,3 +1,9 @@
+---
+paths:
+  - "src/app/**"
+  - "src/components/**"
+---
+
 # Couche présentation
 
 `src/app/` n'appelle que la couche service, jamais la couche données. Sa

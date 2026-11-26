@@ -1,3 +1,8 @@
+---
+paths:
+  - "src/server/data/**"
+---
+
 # Couche données
 
 Seule la couche données parle à la base. Le client SQLite (`@libsql/client`)
